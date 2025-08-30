@@ -1,0 +1,254 @@
+#!/usr/bin/env node
+
+let code = `
+# simple math
+(* (+ 3 3 1 1 1) (+ 6 9))
+
+# js interop
+(console.log "hello world")
+
+# define functions
+(fun "(will) (a b) (+ a b)")
+
+# executed defined functions
+(will 7 3)
+
+`;
+
+if (process.argv.length > 2) {
+  const uargs = process.argv.slice(2);
+  if (uargs[0] === '-e' || uargs[0] === '--eval') {
+    code = uargs[1];
+  }
+
+  else {
+    const fs = require('fs');
+    code = fs.readFileSync(uargs[0], 'utf8');
+  }
+}
+
+////
+globalThis['print'] = console.log;
+
+const functions = {
+  'lizb': (...args) => args,
+  '+': (...nums) => {
+    let res = 0;
+    for (const num of nums) {
+      res += num;
+    }
+    return res;
+  },
+  '*': (...nums) => {
+    let res = 1;
+    for (const num of nums) {
+      res *= num;
+    }
+    return res;
+  },
+  '-': (...nums) => {
+    let res = 0;
+    for (const num of nums) {
+      res -= num;
+    }
+    return res;
+  },
+  '/': (...nums) => {
+    if (nums.length === 0) {
+      return 1;
+    }
+    let res = nums[0];
+    for (const num of nums.slice(1)) {
+      res = res / num;
+    }
+    return res;
+  },
+  'log': console.log,
+  'fun': (...margs) => {
+    // define functions in format (fun "(name) (arg1 arg2) (code...)")
+    const code = margs[0];
+    const tokens = code_to_tokens(code);
+    const tree = make_tree(tokens);
+    const fnArgs = [];
+    const fnName = tree.children[0].name;
+
+    if (tree.children.length === 3) {
+      fnArgs.push(tree.children[1].name);
+      for (const kid of tree.children[1].children) {
+        fnArgs.push(kid.name);
+      }
+    }
+
+    functions[fnName] = lizb_fn;
+
+    function lizb_fn(...fargs) {
+      // find and replace the fn args... I guess lol
+      const newTokens = tokens.map(x => {
+        for (let i = 0; i < fnArgs.length; i++) {
+          if (fnArgs[i] === x) {
+            return `${fargs[i]}`;
+          }
+        }
+        return x;
+      });
+      const tree = make_tree(newTokens);
+
+      return tree.children[tree.children.length - 1].eval();
+    }
+  }
+};
+
+class Node {
+  constructor(name, is_val=true) {
+    this.name = name;
+    this.children = [];
+    this.is_val = is_val;
+  }
+
+  eval() {
+    const args = this.children.map(x => x.eval());
+
+    if (this.is_val) {
+      this.fun = () => eval(this.name);
+    }
+    else if (this.is_val == false) {
+      const parts = this.name.split('.');
+      let jsThis = globalThis;
+      let lizbThis = functions;
+
+      for (const part of parts.slice(0, -1)) {
+        let valid = false;
+        if (part in jsThis) {
+          jsThis = jsThis[part];
+          valid = true;
+        }
+        if (part in lizbThis) {
+          lizbThis = lizbThis[part];
+          valid = true;
+        }
+        if (!valid) {
+          throw new Error(`${this.name} is not found!!!`);
+        }
+      }
+
+      const fnName = this.name.split('.')[this.name.split('.').length -1];
+
+      if (fnName in lizbThis) {
+        this.fun = lizbThis[fnName];
+      } else if (fnName in jsThis) {
+        this.fun = jsThis[fnName];
+      } else {
+        throw new Error(`${this.name} is not defined!!!`);
+      }
+    }
+
+    if (args.length > 0) {
+      return this.fun(...args);
+    } else {
+      return this.fun();
+    }
+  }
+}
+
+
+const tokens = code_to_tokens(code);
+const root = {};
+let node = root;
+let tree = make_tree(tokens);
+///print_tree(tree);
+///print('~~~~~~~~~');
+///print(tree);
+///print("~~~~~~~~~~~~~~~");
+print(tree.eval().filter(x => !!x));
+
+function make_tree(tokens) {
+  const stack = [new Node('lizb', false)]; // root
+
+  stack.peek = () => stack.length > 0 ? stack[stack.length - 1] : undefined;
+
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i] === '(') {
+      i++;
+      new_node = new Node(tokens[i], false);
+      stack.peek().children.push(new_node);
+      stack.push(new_node);
+    }
+    else if (tokens[i] === ')') {
+      stack.pop();
+      i++;
+    }
+    else {
+      stack.peek().children.push(new Node(tokens[i]));
+    }
+  }
+
+  return stack.peek();
+
+}
+
+
+function print_tree(n, depth = 0) {
+  let s = '';
+  for (let i = 0; i < depth; i++) { s += '  '; }
+  s += n.name;
+  print(s);
+  for (const child of n.children) {
+    print_tree(child, depth + 1);
+  }
+}
+
+function code_to_tokens(code) {
+  const tokens = [];
+  let curtok = '';
+
+  const modes = {
+    DEFAULT: 0,
+    STRING: 1,
+    COMMENT: 2,
+  };
+
+  let mode = modes.DEFAULT;
+
+  for (let i = 0; i < code.length; i++) {
+    if (mode === modes.STRING) {
+      if (code[i] === '"') {
+        curtok += '"';
+        mode = modes.DEFAULT;
+      }
+      else {
+        curtok += code[i];
+      }
+    }
+    else if (mode === modes.COMMENT) {
+      if (code[i] === '\n') {
+        mode = modes.DEFAULT;
+      }
+    }
+    else if (code[i] === '#') {
+      tokens.push(curtok);
+      mode = modes.COMMENT;
+    }
+    else if (code[i] == '(') {
+      tokens.push('(');
+    }
+    else if (code[i] == ')') {
+      tokens.push(curtok);
+      curtok = '';
+      tokens.push(')');
+    }
+    else if (code[i] == '"') {
+      curtok = '"';
+      mode = modes.STRING;
+    }
+    else if (code[i] == ' ' || code[i] == '\n') {
+      tokens.push(curtok);
+      curtok = '';
+    }
+    else {
+      curtok += code[i];
+    }
+  }
+
+  return tokens;
+}
+
