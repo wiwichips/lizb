@@ -23,3 +23,7 @@ usage
 ./run file.lizb
 ```
 
+todo
+- async / promise syntax
+- better error handling
+- cdn to use it in browsers
