@@ -2,205 +2,152 @@
 
 let code = `
 # simple math
-(* (+ 3 3 1 1 1) (+ 6 9))
+(console.log (* (+ 2) (+ 1 7)))
 
 # js interop
-(console.log "hello world")
+(console.log "hello world") #after comment
 
-# define functions
-(fun "(will) (a b) (+ a b)")
-
-# executed defined functions
-(will 7 3)
-
+(Math.max 100 123 77)
 `;
 
 if (process.argv.length > 2) {
   const uargs = process.argv.slice(2);
-  if (uargs[0] === '-e' || uargs[0] === '--eval') {
+  if (uargs[0] === '-e' || uargs[0] === '--eval')
     code = uargs[1];
-  }
-
-  else {
-    const fs = require('fs');
-    code = fs.readFileSync(uargs[0], 'utf8');
-  }
+  else
+    code = require('fs').readFileSync(uargs[0], 'utf8');
 }
 
-////
+/////////////////////////////////////////////////
 globalThis['print'] = console.log;
-
-const functions = {
-  'lizb': (...args) => args,
-  '+': (...nums) => {
-    let res = 0;
-    for (const num of nums) {
-      res += num;
-    }
-    return res;
+lizglobal = {
+  '*': args => args.reduce((a, c) => a * c, 1),
+  '/': args => args.reduce((a, c) => a / c, 1),
+  '+': args => args.reduce((a, c) => a + c, 0),
+  '-': args => {
+    if (args.length === 1)
+      return -1 * args[0];
+    return args.reduce((a, c) => a - c);
   },
-  '*': (...nums) => {
-    let res = 1;
-    for (const num of nums) {
-      res *= num;
-    }
-    return res;
-  },
-  '-': (...nums) => {
-    let res = 0;
-    for (const num of nums) {
-      res -= num;
-    }
-    return res;
-  },
-  '/': (...nums) => {
-    if (nums.length === 0) {
-      return 1;
-    }
-    let res = nums[0];
-    for (const num of nums.slice(1)) {
-      res = res / num;
-    }
-    return res;
-  },
-  'log': console.log,
-  'fun': (...margs) => {
-    // define functions in format (fun "(name) (arg1 arg2) (code...)")
-    const code = margs[0];
-    const tokens = code_to_tokens(code);
-    const tree = make_tree(tokens);
-    const fnArgs = [];
-    const fnName = tree.children[0].name;
-
-    if (tree.children.length === 3) {
-      fnArgs.push(tree.children[1].name);
-      for (const kid of tree.children[1].children) {
-        fnArgs.push(kid.name);
-      }
-    }
-
-    functions[fnName] = lizb_fn;
-
-    function lizb_fn(...fargs) {
-      // find and replace the fn args... I guess lol
-      const newTokens = tokens.map(x => {
-        for (let i = 0; i < fnArgs.length; i++) {
-          if (fnArgs[i] === x) {
-            return `${fargs[i]}`;
-          }
-        }
-        return x;
-      });
-      const tree = make_tree(newTokens);
-
-      return tree.children[tree.children.length - 1].eval();
-    }
-  }
+  'cat': args => args.join(''),
 };
+for (const key in lizglobal) { lizglobal[key].liz = true; }
 
-class Node {
-  constructor(name, is_val=true) {
-    this.name = name;
-    this.children = [];
-    this.is_val = is_val;
+function lizlookup(name, ns=null) {
+  const nameParts = name.split('.');
+  let thing = globalThis;
+  if (nameParts[0] in lizglobal) thing = lizglobal;
+
+  for (const part of nameParts) {
+    thing = thing[part];
   }
+
+  return thing;
+}
+
+function lizinvoke(invokable, args) {
+  if (typeof invokable === "function" && invokable instanceof Function) {
+    if (invokable.liz)
+      return invokable(args);
+    return invokable.apply(lizglobal, args);
+  }
+  if (args.length === 1) {
+    return invokable[args[0]];
+  }
+  throw new Error(`lizinvoke failure`);
+}
+
+class Obj {
+  static type = {
+    
+  };
+
+  constructor(token) {
+    this.token = token;
+    this.list = [];
+    this.list.peek = () => this.list[this.list.length - 1];
+  }
+
+  first() { return this.list[0]; }
+  rest()  { return this.list.slice(1); }
 
   eval() {
-    const args = this.children.map(x => x.eval());
+    // if leaf node, evaluate
+    if (this.list.length === 0) {
+      switch (this.token) {
+        case ("fun"): // define function
+          break;
+        case ("var"): // define variable
+          break;
+        default:
+          // number
+          if (!isNaN(this.token) && this.token.trim() !== '') {
+            return Number(this.token);
+          }
 
-    if (this.is_val) {
-      this.fun = () => eval(this.name);
-    }
-    else if (this.is_val == false) {
-      const parts = this.name.split('.');
-      let jsThis = globalThis;
-      let lizbThis = functions;
-
-      for (const part of parts.slice(0, -1)) {
-        let valid = false;
-        if (part in jsThis) {
-          jsThis = jsThis[part];
-          valid = true;
-        }
-        if (part in lizbThis) {
-          lizbThis = lizbThis[part];
-          valid = true;
-        }
-        if (!valid) {
-          throw new Error(`${this.name} is not found!!!`);
-        }
-      }
-
-      const fnName = this.name.split('.')[this.name.split('.').length -1];
-
-      if (fnName in lizbThis) {
-        this.fun = lizbThis[fnName];
-      } else if (fnName in jsThis) {
-        this.fun = jsThis[fnName];
-      } else {
-        throw new Error(`${this.name} is not defined!!!`);
+          // string
+          if (this.token[0] === '"') return this.token.slice(1, -1);
+          
+          // variable name
+          const lizlookupres =  lizlookup(this.token);
+          return lizlookupres;
       }
     }
 
-    if (args.length > 0) {
-      return this.fun(...args);
-    } else {
-      return this.fun();
+    if (!this.root) { 
+      const fn = this.first().eval();
+      const args = this.rest().map(x => x.eval());
+      return lizinvoke(fn, args);
     }
+    return this.list.map(x => x.eval());
   }
 }
+/////////////////////////////////////////////////
 
+const tokens = tokenize(code);
+print(tokens);
 
-const tokens = code_to_tokens(code);
-const root = {};
-let node = root;
-let tree = make_tree(tokens);
-///print_tree(tree);
-///print('~~~~~~~~~');
-///print(tree);
-///print("~~~~~~~~~~~~~~~");
-print(tree.eval().filter(x => !!x));
+const ast = parse(tokens);
+console.log(ast);
 
-function make_tree(tokens) {
-  const stack = [new Node('lizb', false)]; // root
+const res = ast.eval();
+print(res);
+debugger;
 
-  stack.peek = () => stack.length > 0 ? stack[stack.length - 1] : undefined;
+function parse(tokens) {
+  let i = 0;
+  let a = 0;
 
-  for (let i = 0; i < tokens.length; i++) {
-    if (tokens[i] === '(') {
-      i++;
-      new_node = new Node(tokens[i], false);
-      stack.peek().children.push(new_node);
-      stack.push(new_node);
-    }
-    else if (tokens[i] === ')') {
+  const root = new Obj('root');
+  root.root = true;
+  const stack = [root];
+  stack.peek = () => stack[stack.length - 1];
+
+  while (i < tokens.length) {
+    const token = tokens[i];
+
+    if (token === ')') {
       stack.pop();
-      i++;
+      print(stack.length, '  '.repeat(stack.length), token);
     }
+    else if (token === '(') {
+      print(stack.length, '  '.repeat(stack.length), token);
+      stack.peek().list.push(new Obj(token));
+      stack.push(stack.peek().list.peek());
+    }
+
     else {
-      stack.peek().children.push(new Node(tokens[i]));
+      print(stack.length, '  '.repeat(stack.length), token);
+      stack.peek().list.push(new Obj(token));
     }
+    i += 1;
   }
-
-  return stack.peek();
-
+  return root;
 }
 
-
-function print_tree(n, depth = 0) {
-  let s = '';
-  for (let i = 0; i < depth; i++) { s += '  '; }
-  s += n.name;
-  print(s);
-  for (const child of n.children) {
-    print_tree(child, depth + 1);
-  }
-}
-
-function code_to_tokens(code) {
+function tokenize(code) {
   const tokens = [];
   let curtok = '';
-
   const modes = {
     DEFAULT: 0,
     STRING: 1,
@@ -214,41 +161,31 @@ function code_to_tokens(code) {
       if (code[i] === '"') {
         curtok += '"';
         mode = modes.DEFAULT;
-      }
-      else {
+      } else
         curtok += code[i];
-      }
     }
     else if (mode === modes.COMMENT) {
-      if (code[i] === '\n') {
+      if (code[i] === '\n')
         mode = modes.DEFAULT;
-      }
-    }
-    else if (code[i] === '#') {
+    } else if (code[i] === '#') {
       tokens.push(curtok);
       mode = modes.COMMENT;
-    }
-    else if (code[i] == '(') {
+    } else if (code[i] == '(') {
       tokens.push('(');
-    }
-    else if (code[i] == ')') {
+    } else if (code[i] == ')') {
       tokens.push(curtok);
       curtok = '';
       tokens.push(')');
-    }
-    else if (code[i] == '"') {
+    } else if (code[i] == '"') {
       curtok = '"';
       mode = modes.STRING;
-    }
-    else if (code[i] == ' ' || code[i] == '\n') {
+    } else if (code[i] == ' ' || code[i] == '\n') {
       tokens.push(curtok);
       curtok = '';
-    }
-    else {
+    } else
       curtok += code[i];
-    }
   }
 
-  return tokens;
+  return tokens.filter((tok) => tok != '');
 }
 
