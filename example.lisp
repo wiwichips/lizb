@@ -1,12 +1,7 @@
 # simple math
-(* (+ 3 3 1 1 1) (+ 6 9))
+(console.log (* (+ 2) (+ 1 7)))
 
 # js interop
-(console.log "hello world")
+(console.log "hello world") #after comment
 
-# define functions
-(fun "(will) (a b) (+ a b)")
-
-# executed defined functions
-(will 7 3)
-
+(Math.max 100 123 77)
