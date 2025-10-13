@@ -7,13 +7,22 @@ class Context {
   }
 
   get(name) {
-    if (name in this.props)
-      return this.props[name];
+    const parts = name.split(/[./]/);
+    let value = undefined;
 
-    else if (this.parent === undefined)
-      return undefined;
+    if (parts[0] in this.props)
+      value = this.props[parts[0]];
+    else if (this.parent !== undefined)
+      value = this.parent.get(parts[0]);
 
-    return this.parent.get(name);
+    if (parts.length === 1)
+      return value;
+
+    // module path
+    for (const part of parts.slice(1))
+      value = value[part]; // todo: error handling
+
+    return value;
   }
 }
 
@@ -24,7 +33,7 @@ function evalItem(obj, ctx = globalContext) {
     return eval(obj);
   switch (obj.type) {
     case 'root':
-      return x => x;
+      return (...x) => x;
     case 'special':
       return obj.token;
     case 'number':
@@ -52,7 +61,7 @@ function eval(ast, ctx = globalContext) {
   }
 
   // execute function?
-  return first.apply(undefined, [rest]);
+  return first.apply(undefined, rest);
 }
 
 // exports
