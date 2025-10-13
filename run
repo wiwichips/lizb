@@ -26,9 +26,12 @@ async function main() {
         output: process.stdout,
         terminal: false
       });
+      rl.setPrompt("> ");
+      rl.prompt();
 
       for await (const line of rl) {
         runCode(line);
+        rl.prompt();
       }
     } else
       code = require('fs').readFileSync(uargs[0], 'utf8');

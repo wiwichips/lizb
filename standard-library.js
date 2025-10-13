@@ -1,14 +1,16 @@
-/*
- * Big problem... The functions take in a list as args,
- * would it make more sense for them to take in regular
- * positional args? So that it would be more compatible with js?
- * 
- * what does cljs do?
- */
+// host env modules
+const js = globalThis;
+const nodejs = {
+  // todo
+}
 
-// globals
-lizglobal = {
-  'js': globalThis,
+// standard library 
+const standardLibrary = {
+  // modules
+  'js': js,
+  'nodejs': nodejs,
+
+  // standard library
   '*': (...args) => args.reduce((a, c) => a * c, 1),
   '/': (...args) => args.reduce((a, c) => a / c, 1),
   '+': (...args) => args.reduce((a, c) => a + c, 0),
@@ -21,7 +23,7 @@ lizglobal = {
   'print': console.log,
 //  'map': (fn, list) => 
 };
-for (const key in lizglobal) { lizglobal[key].liz = true; }
+//for (const key in lizglobal) { lizglobal[key].liz = true; }
 
-exports.lizglobal = lizglobal;
+exports.std = standardLibrary;
 

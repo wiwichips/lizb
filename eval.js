@@ -1,4 +1,4 @@
-const std = require('./standard-library.js').lizglobal;
+const { std } = require('./standard-library.js');
 
 class Context {
   constructor(base={}, parent) {
