@@ -1,4 +1,4 @@
-const { std } = require('./standard-library.js');
+import { std } from './standard-library.js';
 
 class Context {
   constructor(base={}, parent) {
@@ -30,7 +30,7 @@ const globalContext = new Context(std);
 
 function evalItem(obj, ctx = globalContext) {
   if (obj instanceof Array)
-    return eval(obj);
+    return evaluate(obj);
   switch (obj.type) {
     case 'root':
       return (...x) => x;
@@ -49,7 +49,7 @@ function evalItem(obj, ctx = globalContext) {
   }
 }
 
-function eval(ast, ctx = globalContext) {
+function evaluate(ast, ctx = globalContext) {
   if (ast.length === 0)
     return [];
 
@@ -65,5 +65,7 @@ function eval(ast, ctx = globalContext) {
 }
 
 // exports
-exports.evalAst = eval;
+export { Context };
+export const evalAst = evaluate;
+export { evaluate };
 

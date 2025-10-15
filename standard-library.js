@@ -23,7 +23,6 @@ const standardLibrary = {
   'print': console.log,
 //  'map': (fn, list) => 
 };
-//for (const key in lizglobal) { lizglobal[key].liz = true; }
 
-exports.std = standardLibrary;
+export const std = standardLibrary;
 

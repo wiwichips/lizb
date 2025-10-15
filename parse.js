@@ -51,5 +51,5 @@ function parse(tokens) {
 }
 
 // exports
-exports.parser = parse;
+export const parser = parse;
 

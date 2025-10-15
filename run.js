@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-
-const { lexer } = require('./lexer.js');
-const { parser } = require('./parse.js');
-const { evalAst } = require('./eval.js');
-const readline = require('readline');
+import { lexer } from './lexer.js';
+import { parser } from './parse.js';
+import { evalAst } from './eval.js';
+import fs from 'node:fs';
+import readline from 'node:readline';
 
 let code = `
 # simple math
@@ -41,13 +41,14 @@ async function main() {
 
 function runCode(codeString) {
   const tokens = lexer(codeString);
-  //console.log(tokens);
+  console.log(tokens);
 
   const ast = parser(tokens);
-  //console.log(ast);
+  console.log(ast);
 
   const ret = evalAst(ast);
   console.log(ret);
 }
 
 main();
+

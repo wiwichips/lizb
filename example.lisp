@@ -1,7 +1,8 @@
 # simple math
-(console.log (* (+ 2) (+ 1 7)))
+(js/console.log (* (+ 2) (+ 1 7)))
 
 # js interop
-(console.log "hello world") #after comment
+(js/console.log "hello world from example.lisp") #after comment
 
-(Math.max 100 123 77)
+(js/Math.max 100 123 77)
+

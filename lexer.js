@@ -1,4 +1,4 @@
-exports.lexer = function lexer(code) {
+export function lexer(code) {
   const tokens = [];
   let curtok = '';
   const modes = {
