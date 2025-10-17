@@ -41,8 +41,13 @@ function evaluate(ast, ctx = globalContext) {
     rest.push(evalItem(ast[i], ctx));
   }
 
-  // execute function?
-  return first.apply(undefined, rest);
+  if (first instanceof Function)
+    return first.apply(undefined, rest);
+
+  // obj / maps act like functions where keys are arg
+  else if (first instanceof Object && rest.length === 1)
+    return first[rest[0]];
+  throw new Error(`Invalid evaluation: (${first} -- ${rest})`);
 }
 
 // exports

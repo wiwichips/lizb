@@ -13,4 +13,10 @@
 # functions
 ((fun (a b c) (+ a b c)) 2 3 4)
 ((fun (a b c) (* (+ a) (+ b c))) 2 1 7)
+((fun variadic (js/console.log  variadic)) 2 3 4)
+
+(map
+  (fun (x) (* x x))
+  (list 1 2 3 4 5 6))
+
 

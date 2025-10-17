@@ -22,9 +22,33 @@ const standardLibrary = {
       return -1 * args[0];
     return args.reduce((a, c) => a - c);
   },
-  'cat': args => args.join(''),
+  'cat': (...args) => args.join(''),
   'print': console.log,
-//  'map': (fn, list) => 
+  'list': (...args) => args,
+
+  /**
+   * (map fn list) OR (map fn list1 list2 ... listN)
+   *                        ^- fn operates on N args
+   */
+  'map': function map_impl() {
+    const fn = arguments[0];
+    // (map fn data)
+    if (arguments.length === 2)
+      return arguments[1].map(x=>fn(x));
+
+    // (map fn list1 list2 list3)
+    const rest = Array.from(arguments).splice(1);
+    const minLength = Math.min(...rest.map(x=>x.length));
+
+    let result = [];
+    for (let i = 0; i < minLength; i++) {
+      const row = [];
+      for (const lst of rest)
+        row.push(lst[i]);
+      result.push(fn(...lst));
+    }
+    return result;
+  }
 };
 
 // functions for processing code for lambdas etc
