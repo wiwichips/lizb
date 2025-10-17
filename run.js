@@ -34,7 +34,7 @@ async function main() {
         rl.prompt();
       }
     } else
-      code = require('fs').readFileSync(uargs[0], 'utf8');
+      code = fs.readFileSync(uargs[0], 'utf8');
   }
   runCode(code);
 }

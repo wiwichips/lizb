@@ -1,41 +1,16 @@
-import { std } from './standard-library.js';
-
-class Context {
-  constructor(base={}, parent) {
-    this.props = base;
-    this.parent = parent;
-  }
-
-  get(name) {
-    const parts = name.split(/[./]/);
-    let value = undefined;
-
-    if (parts[0] in this.props)
-      value = this.props[parts[0]];
-    else if (this.parent !== undefined)
-      value = this.parent.get(parts[0]);
-
-    if (parts.length === 1)
-      return value;
-
-    // module path
-    for (const part of parts.slice(1))
-      value = value[part]; // todo: error handling
-
-    return value;
-  }
-}
+import { std, specials, Special } from './standard-library.js';
+import { Context } from './context.js';
 
 const globalContext = new Context(std);
 
 function evalItem(obj, ctx = globalContext) {
   if (obj instanceof Array)
-    return evaluate(obj);
+    return evaluate(obj, ctx);
   switch (obj.type) {
     case 'root':
       return (...x) => x;
     case 'special':
-      return obj.token;
+      return specials[obj.token];
     case 'number':
       return Number(obj.token);
     case 'string':
@@ -50,10 +25,16 @@ function evalItem(obj, ctx = globalContext) {
 }
 
 function evaluate(ast, ctx = globalContext) {
+  if (!(ast instanceof Array))
+    return evalItem(ast, ctx);
   if (ast.length === 0)
     return [];
 
-  const first = evalItem(ast[0]);
+  const first = evalItem(ast[0], ctx);
+
+  if (first instanceof Special)
+    return first.process(ast, ctx);
+
   const rest = [];
 
   for (let i = 1; i < ast.length; i++) {
@@ -65,7 +46,6 @@ function evaluate(ast, ctx = globalContext) {
 }
 
 // exports
-export { Context };
 export const evalAst = evaluate;
 export { evaluate };
 
