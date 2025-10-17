@@ -6,16 +6,13 @@ I'll use it on my personal website to make it more personal
 Example file:
 ```lisp
 # simple math
-(* (+ 3 3 1 1 1) (+ 6 9))
+(* (+ 3 1) (+ 6 1))
 
 # js interop
-(console.log "hello world")
+(js/console.log "hello world")
 
 # define functions
-(fun "(will) (a b) (+ a b)")
-
-# executed defined functions
-(will 7 3)
+(let will (fun (a b) (+ a b)) (will 7 3))
 ```
 
 usage
