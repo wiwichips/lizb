@@ -53,4 +53,5 @@ function evaluate(ast, ctx = globalContext) {
 // exports
 export const evalAst = evaluate;
 export { evaluate };
+export { globalContext };
 

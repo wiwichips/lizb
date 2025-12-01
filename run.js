@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import readline from 'node:readline';
 
 
-//todo this is evil, undo this later...
+//todo this is evil, undo this later... (can I just use slice instead?)
 Object.defineProperty(Array.prototype, "splice", {
   value: function (start, deleteCount) {
     const arr = this;

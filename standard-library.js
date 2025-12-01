@@ -1,5 +1,5 @@
 import { Context } from './context.js';
-import { evaluate } from './eval.js';
+import { evaluate, globalContext } from './eval.js';
 
 import { readFileSync } from "node:fs"; // won't work in browser... TODO
 
@@ -39,6 +39,10 @@ const standardLibrary = {
   'print': console.log,
   'list': (...args) => args,
 
+  'debugger': (...x)=>{ debugger },
+
+  'number': Number,
+
   /**
    * (map fn list) OR (map fn list1 list2 ... listN)
    *                        ^- fn operates on N args
@@ -61,6 +65,23 @@ const standardLibrary = {
       result.push(fn(...lst));
     }
     return result;
+  },
+
+  /**
+   * (reduce fn accumulator-default list1 list2 list3 ... listN)
+   * where fn accepts (accumulator, num) parameters in that order...
+   */
+  'reduce': function filter_impl() {
+    debugger;
+
+    const fn = arguments[0];
+    let acc = arguments[1];
+
+    const inputList = [];
+    for (let i = 2; i < arguments.length; i++)
+      inputList.push(...arguments[i]);
+
+    return inputList.reduce(((a,b) => fn(a,b)), acc);
   },
 
   /**
@@ -90,9 +111,11 @@ const standardLibrary = {
   },
 
   'split': (s,d) => s.split(d),
-  'len': x => x.length,
+  'len': lst => lst.length,
 
-  'first': x => x[0],
+  'first':  lst => lst[0],
+  'second': lst => lst[1],
+  'rest':   lst => lst.slice(1),
 
   /**
    * (range num) --> 0, ... num
@@ -147,9 +170,10 @@ const specialHandlers = {
     function wrapper() {
       // define scope
       const scope = {};
-      if (args instanceof Array)
-        for (let i = 0; i < arguments.length; i++)
+      if (args instanceof Array) {
+        for (let i = 0; i < Math.min(args.length, arguments.length); i++)
           scope[args[i].token] = arguments[i];
+      }
       else
         scope[args.token] = Array.from(arguments);
       const innerCtx = new Context(scope, ctx);
@@ -166,8 +190,8 @@ const specialHandlers = {
    * examples:
    * - (let x val code)
    * - (let x val code code code)
-   * - (let ((a v1) (b v2) (c v3)) code)
-   * - (let ((a v1) (b v2) (c v3)) code code code)
+   * - (let (a v1 b v2 c v3) code)
+   * - (let (a v1 b v2 c v3) code code code)
    *
    * Returns the last evaluated code expression
    */
@@ -175,25 +199,28 @@ const specialHandlers = {
     const rest = ast.splice(1);
 
     const scope = {};
+    let afterLet = [];
     // FORM 1:
     if (!(rest[0] instanceof Array)) {
 
       // set param in ctx
       scope[rest[0].token] = evaluate(rest[1], ctx);
+      afterLet = rest.slice(2);
     }
 
     // FORM 2:
     else {
-      for (const pair of rest[0]) {
+      for (let i = 0; i < rest[0].length; i+=2) {
+        let pair = [ rest[0][i], rest[0][i + 1] ];
         // set param in ctx
-        scope[pair[0].token] = evalaute(pair[1], ctx);
+        scope[pair[0].token] = evaluate(pair[1], new Context(scope, ctx));
       }
+      afterLet = rest.slice(1);
     }
 
     const innerCtx = new Context(scope, ctx);
 
     // execute all code after let definitions
-    const afterLet = rest.splice(2);
     let evalResult;
 
     for (const code of afterLet) {
@@ -201,26 +228,18 @@ const specialHandlers = {
     }
 
     return evalResult; // only return last evaluated statement
-    // END ---------------
+  }),
 
-
-    /// const rest = ast.splice(1);
-    /// const code = rest.pop();
-
-    /// // account for shortcut case where no brackets around single key value thing
-    /// if (rest.length === 2 && !(rest[0] instanceof Array)) {
-    ///   rest[0] = [rest[0], rest[1]];
-    ///   rest.pop()
-    /// }
-
-    /// const scope = {};
-    /// for (const vp of rest) {
-    ///   if (!vp[0]) debugger;
-    ///   scope[vp[0].token] = evaluate(vp[1], ctx);
-    /// }
-    /// const innerCtx = new Context(scope, ctx);
-
-    /// return evaluate(code, innerCtx);
+  /**
+   * Global variable.
+   * example:
+   * - (global varname expr)
+   * - (global will 1) (print will) # prints 1
+   */
+  'global': new Special((ast, ctx) => {
+    const rest = ast.slice(1);
+    globalContext.props[rest[0].token] = evaluate(rest[1]);
+    //return globalContext[rest[0].token];
   }),
 
   /**
