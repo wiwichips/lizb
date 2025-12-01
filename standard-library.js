@@ -1,6 +1,8 @@
 import { Context } from './context.js';
 import { evaluate } from './eval.js';
 
+import { readFileSync } from "node:fs"; // won't work in browser... TODO
+
 // host env modules
 const js = globalThis;
 const nodejs = {
@@ -22,6 +24,17 @@ const standardLibrary = {
       return -1 * args[0];
     return args.reduce((a, c) => a - c);
   },
+  '=': (...args) => {
+    for (let i = 1; i < args.length; i++) {
+      if (args[i - 1] !== args[i]) return false;
+    }
+    return true;
+  },
+  'mod': (dividend, divisor) => dividend % divisor,
+  'not': x => !x,
+  'div': (dividend, divisor) => !(dividend % divisor),
+  'and': (...args) => args.reduce((a, c) => a && c, true),
+
   'cat': (...args) => args.join(''),
   'print': console.log,
   'list': (...args) => args,
@@ -48,6 +61,45 @@ const standardLibrary = {
       result.push(fn(...lst));
     }
     return result;
+  },
+
+  /**
+   * (where fn list)
+   * TODO: UnTEstED
+   */
+  'where': function filter_impl() {
+    const fn = arguments[0];
+    const lst = arguments[1];
+
+    return lst.filter(fn);
+  },
+
+  /**
+   * remove duplicates
+   * (unique lst)
+   */
+  'unique': function unique_impl() {
+    const lst = arguments[0];
+
+    const resSet = new Set(lst);
+    return Array.from(resSet);
+  },
+
+  'fs': {
+    read: (fname) => readFileSync(fname, 'utf8'),
+  },
+
+  'split': (s,d) => s.split(d),
+  'len': x => x.length,
+
+  'first': x => x[0],
+
+  /**
+   * (range num) --> 0, ... num
+   */
+  'range': function() {
+    const n = arguments[0] - 1;
+    return Array.from({ length: n }, (_, i) => i + 1);
   }
 };
 
@@ -112,25 +164,101 @@ const specialHandlers = {
   /**
    * Define a variable in the following forms:
    * examples:
-   * - NOT SUPPORTED --> (let x val (code)) <-- should I do this later?
-   * - (let (a v1) (b v2) (c v3) (code))
+   * - (let x val code)
+   * - (let x val code code code)
+   * - (let ((a v1) (b v2) (c v3)) code)
+   * - (let ((a v1) (b v2) (c v3)) code code code)
+   *
+   * Returns the last evaluated code expression
    */
   'let': new Special((ast, ctx) => {
     const rest = ast.splice(1);
-    const code = rest.pop();
-
-    // account for shotcut case where no brackets around single key value thing
-    if (rest.length === 2 && !(rest[0] instanceof Array)) {
-      rest[0] = [rest[0], rest[1]];
-      rest.pop()
-    }
 
     const scope = {};
-    for (const vp of rest)
-      scope[vp[0].token] = evaluate(vp[1], ctx);
+    // FORM 1:
+    if (!(rest[0] instanceof Array)) {
+
+      // set param in ctx
+      scope[rest[0].token] = evaluate(rest[1], ctx);
+    }
+
+    // FORM 2:
+    else {
+      for (const pair of rest[0]) {
+        // set param in ctx
+        scope[pair[0].token] = evalaute(pair[1], ctx);
+      }
+    }
+
     const innerCtx = new Context(scope, ctx);
 
-    return evaluate(code, innerCtx);
+    // execute all code after let definitions
+    const afterLet = rest.splice(2);
+    let evalResult;
+
+    for (const code of afterLet) {
+      evalResult = evaluate(code, innerCtx);
+    }
+
+    return evalResult; // only return last evaluated statement
+    // END ---------------
+
+
+    /// const rest = ast.splice(1);
+    /// const code = rest.pop();
+
+    /// // account for shortcut case where no brackets around single key value thing
+    /// if (rest.length === 2 && !(rest[0] instanceof Array)) {
+    ///   rest[0] = [rest[0], rest[1]];
+    ///   rest.pop()
+    /// }
+
+    /// const scope = {};
+    /// for (const vp of rest) {
+    ///   if (!vp[0]) debugger;
+    ///   scope[vp[0].token] = evaluate(vp[1], ctx);
+    /// }
+    /// const innerCtx = new Context(scope, ctx);
+
+    /// return evaluate(code, innerCtx);
+  }),
+
+  /**
+   * examples:
+   * - (if cond true_exp false_exp)
+   * - (if cond true_exp)
+   * returns result.
+   */
+  'if': new Special((ast, ctx) => {
+    const rest = ast.splice(1);
+
+    const cond = evaluate(rest[0], ctx);
+
+    if (cond)
+      return evaluate(rest[1], ctx);
+    else if (rest[2])
+      return evaluate(rest[2], ctx);
+    return undefined;
+  }),
+
+  /**
+   * When a condition is true, return the value; else return default value.
+   * examples:
+   * - (when cond1 expr1 cond2 expr2 cond3 expr3 defaultexpr)
+   * - (when cond1 expr1 cond2 expr2 cond3 expr3)
+   * - (when defaultexpr)
+   */
+  'when': new Special((ast, ctx) => {
+    for (let i = 1; i < ast.length; i+=2) {
+      if (!ast[i + 1]) break;
+      const [cond, expr] = [ast[i], ast[i + 1]];
+      if (evaluate(cond, ctx))
+        return evaluate(expr, ctx);
+    }
+
+    // if there is a default expr, evaluate it
+    if ((ast.length - 1) % 2 === 1)
+      return evaluate(ast[ast.length - 1], ctx);
   }),
 };
 

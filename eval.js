@@ -47,7 +47,7 @@ function evaluate(ast, ctx = globalContext) {
   // obj / maps act like functions where keys are arg
   else if (first instanceof Object && rest.length === 1)
     return first[rest[0]];
-  throw new Error(`Invalid evaluation: (${first} -- ${rest})`);
+  throw new Error(`Invalid evaluation: (${ast[0]?.token}:${first} -- ${rest})`);
 }
 
 // exports

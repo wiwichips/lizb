@@ -5,6 +5,36 @@ import { evalAst } from './eval.js';
 import fs from 'node:fs';
 import readline from 'node:readline';
 
+
+//todo this is evil, undo this later...
+Object.defineProperty(Array.prototype, "splice", {
+  value: function (start, deleteCount) {
+    const arr = this;
+    let len = arr.length;
+
+    // Handle negative start like Array.prototype.splice
+    if (start < 0) {
+      start = Math.max(len + start, 0);
+    } else {
+      start = Math.min(start, len);
+    }
+
+    // Handle deleteCount like splice
+    if (deleteCount === undefined) {
+      deleteCount = len - start;
+    } else {
+      deleteCount = Math.max(0, Math.min(deleteCount, len - start));
+    }
+
+    // Just return what splice *would* remove, without mutating
+    return arr.slice(start, start + deleteCount);
+  },
+  writable: true,
+  configurable: true,
+  enumerable: false, // so it behaves like built-ins in for...in
+});
+
+
 let code = `
 # simple math
 (js/console.log (* (+ 2) (+ 1 7)))

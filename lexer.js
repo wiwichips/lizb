@@ -39,6 +39,12 @@ export function lexer(code) {
       curtok += code[i];
   }
 
+  // error
+  const lpc = tokens.filter(x => x === '(').length;
+  const rpc = tokens.filter(x => x === ')').length;
+  if (lpc !== rpc)
+    throw new Error(`Invalid parenthesis: '(':${lpc}, ')':${rpc}`);
+
   return tokens.filter((tok) => tok != '');
 }
 

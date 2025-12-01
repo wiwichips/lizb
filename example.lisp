@@ -1,3 +1,4 @@
+#!/usr/bin/env lizb
 # simple math
 (* (+ 2) (+ 1 7))
 
