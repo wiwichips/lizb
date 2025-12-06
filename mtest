@@ -10,7 +10,7 @@ const RESET = "\x1b[0m";
 const TEST_DIR = path.join(process.cwd(), "tests");
 
 function printHelp() {
-  console.log(`Usage: test [options]
+  console.log(`Usage: mtest [options]
 
 Options:
   -h, --help    Show this help message
@@ -57,7 +57,7 @@ async function findTests(dir = TEST_DIR) {
       }
     }
   } catch {
-    // ignore if ./tests doesn't exist
+    // ignore missing ./tests
   }
   return tests;
 }
@@ -74,18 +74,28 @@ function runTest(file) {
     child.on("close", (code) => {
       if (code === 0) {
         console.log(`${GREEN}PASS${RESET} ${file}`);
-        resolve(true);
-      } else {
-        console.log(`${RED}FAIL${RESET} ${file}`);
-        if (out.trim()) process.stdout.write(out);
-        if (err.trim()) process.stderr.write(err);
-        resolve(false);
+        return resolve(true);
       }
+
+      console.log(`${RED}FAIL${RESET} ${file}`);
+
+      // If running inside GitHub Actions, emit an annotation
+      if (process.env.GITHUB_ACTIONS === "true") {
+        console.log(`::error file=${file}::Test failed`);
+      }
+
+      if (out.trim()) process.stdout.write(out);
+      if (err.trim()) process.stderr.write(err);
+      resolve(false);
     });
 
     child.on("error", (e) => {
       console.log(`${RED}FAIL${RESET} ${file}`);
-      console.error(e.message);
+      if (process.env.GITHUB_ACTIONS === "true") {
+        console.log(`::error file=${file}::${e.message}`);
+      } else {
+        console.error(e.message);
+      }
       resolve(false);
     });
   });
@@ -95,13 +105,14 @@ async function runAllTests() {
   const tests = await findTests();
   if (!tests.length) {
     console.log("No tests found in", TEST_DIR);
-    return;
+    return { passed: 0, total: 0 };
   }
   let passed = 0;
   for (const t of tests) {
     if (await runTest(t)) passed++;
   }
   console.log(`\n${passed}/${tests.length} tests passed`);
+  return { passed, total: tests.length };
 }
 
 let rerunTimer = null;
@@ -143,7 +154,13 @@ async function startWatch() {
     return;
   }
 
-  await runAllTests();
+  const { passed, total } = await runAllTests();
+
+  // CI-friendly exit code: fail if any tests failed
+  if (!watch && total > 0 && passed < total) {
+    process.exitCode = 1;
+  }
+
   if (watch) {
     await startWatch();
   }

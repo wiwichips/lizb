@@ -1,0 +1,37 @@
+name: mtest
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps (optional)
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          elif [ -f package.json ]; then
+            npm install
+          fi
+
+      - name: Make mtest executable
+        run: chmod +x ./mtest ./run.js
+
+      - name: Setup lizb in path
+        run: mkdir -p /tmp/ && mkdir -p /tmp/willbin && sudo ln -s $PWD/run.js /tmp/willbin/lizb && echo "/tmp/willbin" >> $GITHUB_PATH
+
+      - name: Run mtest
+        run: ./mtest
+
