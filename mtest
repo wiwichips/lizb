@@ -1,0 +1,151 @@
+#!/usr/bin/env node
+
+import { promises as fsp, watch as fsWatch } from "fs";
+import path from "path";
+import { spawn } from "child_process";
+
+const GREEN = "\x1b[32m";
+const RED = "\x1b[31m";
+const RESET = "\x1b[0m";
+const TEST_DIR = path.join(process.cwd(), "tests");
+
+function printHelp() {
+  console.log(`Usage: test [options]
+
+Options:
+  -h, --help    Show this help message
+  -w, --watch   Watch current directory and re-run tests on changes
+
+Behaviour:
+  No options    Run all executable files under ./tests recursively.
+  Test passes if it exits with code 0.`);
+}
+
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const watch = args.includes("-w") || args.includes("--watch");
+  const help = args.includes("-h") || args.includes("--help");
+  const known = new Set(["-w", "--watch", "-h", "--help"]);
+  const unknown = args.filter((a) => !known.has(a));
+  if (unknown.length) {
+    console.error("Unknown option(s):", unknown.join(" "));
+    printHelp();
+    process.exit(1);
+  }
+  return { watch, help };
+}
+
+async function isExecutable(file) {
+  try {
+    const st = await fsp.stat(file);
+    return st.isFile() && (st.mode & 0o111);
+  } catch {
+    return false;
+  }
+}
+
+async function findTests(dir = TEST_DIR) {
+  let tests = [];
+  try {
+    const entries = await fsp.readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        tests = tests.concat(await findTests(full));
+      } else if (await isExecutable(full)) {
+        tests.push(full);
+      }
+    }
+  } catch {
+    // ignore if ./tests doesn't exist
+  }
+  return tests;
+}
+
+function runTest(file) {
+  return new Promise((resolve) => {
+    const child = spawn(file, { stdio: ["ignore", "pipe", "pipe"] });
+    let out = "";
+    let err = "";
+
+    child.stdout.on("data", (d) => (out += d));
+    child.stderr.on("data", (d) => (err += d));
+
+    child.on("close", (code) => {
+      if (code === 0) {
+        console.log(`${GREEN}PASS${RESET} ${file}`);
+        resolve(true);
+      } else {
+        console.log(`${RED}FAIL${RESET} ${file}`);
+        if (out.trim()) process.stdout.write(out);
+        if (err.trim()) process.stderr.write(err);
+        resolve(false);
+      }
+    });
+
+    child.on("error", (e) => {
+      console.log(`${RED}FAIL${RESET} ${file}`);
+      console.error(e.message);
+      resolve(false);
+    });
+  });
+}
+
+async function runAllTests() {
+  const tests = await findTests();
+  if (!tests.length) {
+    console.log("No tests found in", TEST_DIR);
+    return;
+  }
+  let passed = 0;
+  for (const t of tests) {
+    if (await runTest(t)) passed++;
+  }
+  console.log(`\n${passed}/${tests.length} tests passed`);
+}
+
+let rerunTimer = null;
+
+function scheduleRerun() {
+  if (rerunTimer) return;
+  rerunTimer = setTimeout(async () => {
+    rerunTimer = null;
+    console.clear();
+    await runAllTests();
+  }, 100);
+}
+
+async function watchDir(dir) {
+  try {
+    fsWatch(dir, () => scheduleRerun());
+  } catch {
+    return;
+  }
+
+  const entries = await fsp.readdir(dir, { withFileTypes: true });
+  for (const e of entries) {
+    if (e.isDirectory()) {
+      if (e.name === "node_modules" || e.name === ".git") continue;
+      await watchDir(path.join(dir, e.name));
+    }
+  }
+}
+
+async function startWatch() {
+  await watchDir(process.cwd());
+  console.log("Watching for changes... (Ctrl+C to exit)");
+}
+
+(async () => {
+  const { watch, help } = parseArgs();
+  if (help) {
+    printHelp();
+    return;
+  }
+
+  await runAllTests();
+  if (watch) {
+    await startWatch();
+  }
+})();
+

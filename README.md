@@ -24,3 +24,7 @@ todo
 - async / promise syntax
 - better error handling
 - cdn to use it in browsers
+
+ideas
+- `(let (a b (list 1 2)) (print (+ a b)))` <-- list deconstruction in let statement
+- `((fun ((a b)) (+ a b)) (list 1 2))` <-- list deconstruction in function def! cool

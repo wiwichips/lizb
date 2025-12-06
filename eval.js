@@ -6,7 +6,7 @@ const globalContext = new Context(std);
 function evalItem(obj, ctx = globalContext) {
   if (obj instanceof Array)
     return evaluate(obj, ctx);
-  switch (obj.type) {
+  switch (obj?.type) {
     case 'root':
       return (...x) => x;
     case 'special':

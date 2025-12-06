@@ -34,6 +34,12 @@ const standardLibrary = {
   'not': x => !x,
   'div': (dividend, divisor) => !(dividend % divisor),
   'and': (...args) => args.reduce((a, c) => a && c, true),
+  'or':  (...args) => args.reduce((a, c) => a || c, false),
+
+  '>':  (left, right) => left > right,
+  '>=': (left, right) => left >= right,
+  '<':  (left, right) => left < right,
+  '<=': (left, right) => left <= right,
 
   'cat': (...args) => args.join(''),
   'print': console.log,
@@ -42,6 +48,7 @@ const standardLibrary = {
   'debugger': (...x)=>{ debugger },
 
   'number': Number,
+  'string': x=>`${x}`,
 
   /**
    * (map fn list) OR (map fn list1 list2 ... listN)
@@ -54,7 +61,7 @@ const standardLibrary = {
       return arguments[1].map(x=>fn(x));
 
     // (map fn list1 list2 list3)
-    const rest = Array.from(arguments).splice(1);
+    const rest = Array.from(arguments).slice(1);
     const minLength = Math.min(...rest.map(x=>x.length));
 
     let result = [];
@@ -72,8 +79,6 @@ const standardLibrary = {
    * where fn accepts (accumulator, num) parameters in that order...
    */
   'reduce': function filter_impl() {
-    debugger;
-
     const fn = arguments[0];
     let acc = arguments[1];
 
@@ -146,9 +151,6 @@ const specialHandlers = {
    * Define a function in the following forms:
    * 
    * examples:
-   * - (defun name (p1 p2 p3) (code)) - keyword token list list
-   * - (defun name params (code))     - keyword token token list
-   * - (defun name (code))            - keyword token list
    * - (fun (p1 p2 p3) (code)) - keyword list list
    * - (fun params (code))     - keyword token list
    * - (fun (code))            - keyword list
@@ -160,9 +162,9 @@ const specialHandlers = {
     let args = [];
     if (ast.length > 0) {
       const argObj = ast.pop();
-      if (argObj instanceof Array)
+      if (argObj instanceof Array) // kll
         args.push(...argObj);
-      else
+      else // ktl or kl
         args  = argObj;
     }
 
@@ -196,7 +198,7 @@ const specialHandlers = {
    * Returns the last evaluated code expression
    */
   'let': new Special((ast, ctx) => {
-    const rest = ast.splice(1);
+    const rest = ast.slice(1);
 
     const scope = {};
     let afterLet = [];
@@ -249,7 +251,7 @@ const specialHandlers = {
    * returns result.
    */
   'if': new Special((ast, ctx) => {
-    const rest = ast.splice(1);
+    const rest = ast.slice(1);
 
     const cond = evaluate(rest[0], ctx);
 
