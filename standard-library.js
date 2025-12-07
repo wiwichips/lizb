@@ -90,6 +90,16 @@ const standardLibrary = {
   },
 
   /**
+   * (pipe data fn1 fn2 fn3 fn4 ... fnN)
+   */
+  'pipe': (...args) => {
+    let data = args[0];
+    for (let i = 1; i < args.length; i++)
+      data = args[i](data);
+    return data;
+  },
+
+  /**
    * (where fn list)
    * TODO: UnTEstED
    */
