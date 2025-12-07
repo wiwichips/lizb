@@ -157,8 +157,11 @@ const standardLibrary = {
    * (range num) --> 0, ... num
    */
   'range': function() {
-    const n = arguments[0] - 1;
-    return Array.from({ length: n }, (_, i) => i + 1);
+    const num = arguments[0];
+    const ret = [];
+    for (let i = 0; i < num; i++)
+      ret.push(i);
+    return ret;
   }
 };
 
