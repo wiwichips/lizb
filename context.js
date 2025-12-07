@@ -5,7 +5,7 @@ class Context {
   }
 
   get(name) {
-    const parts = name.split(/[./]/);
+    const parts = name.split(/(?<=[A-Za-z])[\/.](?=[A-Za-z])/);
     let value = undefined;
 
     if (parts[0] in this.props)
