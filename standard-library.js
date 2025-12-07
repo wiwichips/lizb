@@ -17,7 +17,13 @@ const standardLibrary = {
 
   // standard library
   '*': (...args) => args.reduce((a, c) => a * c, 1),
-  '/': (...args) => args.reduce((a, c) => a / c, 1),
+  '/': (...args) => {
+    let numerator = args[0];
+    for (let i = 1; i < args.length; i++) {
+      numerator = numerator / args[i];
+    }
+    return numerator;
+  },
   '+': (...args) => args.reduce((a, c) => a + c, 0),
   '-': (...args) => {
     if (args.length === 1)
@@ -126,11 +132,26 @@ const standardLibrary = {
   },
 
   'split': (s,d) => s.split(d),
+
+  /**
+   * (slice data start end)
+   * (slice data start)
+   */
+  'slice': (...args) => {
+    const data = args[0];
+    const start = args[1];
+    if (args.length < 3)
+      return data.slice(start);
+    const end = args[2];
+    return data.slice(start, end);
+  },
   'len': lst => lst.length,
+  'get': (lst, idx) => lst[idx],
 
   'first':  lst => lst[0],
   'second': lst => lst[1],
   'rest':   lst => lst.slice(1),
+  'last':   lst => lst[lst.length -1],
 
   /**
    * (range num) --> 0, ... num
