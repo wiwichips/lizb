@@ -9,7 +9,6 @@ import { evalAst } from '../eval.js';
 //const run = (codeStr) => evalAst(parser(lexer(codeStr)));
 const run = (codeStr) => {
   const lex = lexer(codeStr);
-  console.log(lex);
   return evalAst(parser(lex, {}));
 }
 
@@ -32,4 +31,8 @@ assert.equal(run(`
     (* n (fac (- n 1))))))
 (fac 20)
 `)[1], 2432902008176640000);
+
+// parameter deconstruction
+assert.equal(run(`((fun ((a)) a) (list 77))`), 77);
+assert.equal(run(`((fun ((a b)) (+ a b)) (list 77 11))`), 88);
 

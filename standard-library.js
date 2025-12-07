@@ -160,22 +160,37 @@ const specialHandlers = {
   /**
    * Define a function in the following forms:
    * 
-   * examples:
-   * - (fun (p1 p2 p3) (code)) - keyword list list
-   * - (fun params (code))     - keyword token list
-   * - (fun (code))            - keyword list
+   * forms:
+   * - (fun (p1 p2 p3) (code))     - 1.  Regular
+   * - (fun ((p1d p2d) p3) (code)) - 1a. Parameter deconstruction
+   * - (fun params (code))         - 2.  Variadic
+   * - (fun (code))                - 3.  No args
    */
   'fun': new Special((ast, ctx) => {
-    const code = ast.pop(); // code always last
+    const code = ast[ast.length - 1]; // code always last
+    const arglist = ast.slice(0, ast.length -1);
 
     // process function parameter names
     let args = [];
-    if (ast.length > 0) {
-      const argObj = ast.pop();
-      if (argObj instanceof Array) // kll
-        args.push(...argObj);
-      else // ktl or kl
-        args  = argObj;
+    if (arglist.length > 0) {
+      const argObj = arglist.pop();
+      if (argObj instanceof Array) {
+        for (const miniArg of argObj) {
+          // 1a/ Parameter Deconstructions
+          if (miniArg instanceof Array) {
+            let microArgs = [];
+            for (const microArg of miniArg)
+              microArgs.push(microArg.token);
+            args.push(microArgs);
+          }
+          // 1/ Regular Parameter
+          else
+            args.push(miniArg.token);
+        }
+      }
+      // Variadic argument list
+      else
+        args = argObj.token;
     }
 
     // create a function which returns a function to execute based on the args passed
@@ -184,10 +199,19 @@ const specialHandlers = {
       const scope = {};
       if (args instanceof Array) {
         for (let i = 0; i < Math.min(args.length, arguments.length); i++)
-          scope[args[i].token] = arguments[i];
+          // variable deconstruction
+          if (args[i] instanceof Array) {
+            const margs = args[i];
+
+            for (let j = 0; j < Math.min(margs.length, arguments[i].length); j++)
+              scope[margs[j]] = arguments[i][j];
+          }
+          // regular variable
+          else
+            scope[args[i]] = arguments[i];
       }
       else
-        scope[args.token] = Array.from(arguments);
+        scope[args] = Array.from(arguments);
       const innerCtx = new Context(scope, ctx);
 
       // execute function with new scope
