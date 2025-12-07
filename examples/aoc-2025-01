@@ -1,0 +1,20 @@
+#!/usr/bin/env lizb
+
+#(global pairs (map (fun (x) (list (first x) (rest x))) (split (fs/read "./input.txt") "\n")))
+#(print pairs)
+
+###(reduce
+###  (fun (p-z d-m)
+###    (let (pos     (first p-z)
+###          zeroes  (second p-z)
+###          dir (first d-m)
+###          mag (second d-m)
+###          newpos  (when (= dir "L") (% (- pos mag) 100) (% (+ pos mag) 100)))
+###      (list pos (+ (second p-z) (number (second d-m))))))
+###  (list 50 0)
+###  pairs)
+
+
+((fun ((a b)) (+ a b)) (list 1 2))
+#(reduce (fun (a p) (if p (+ a (number (second p))) "end")) 0 pairs)
+

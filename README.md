@@ -1,26 +1,39 @@
 # lizb
 minimalistic sexp based programming language with js interop
 
-I'll use it on my personal website to make it more personal
-
-Example file:
+## fizzbuzz example
 ```lisp
-# simple math
-(* (+ 3 1) (+ 6 1))
-
-# js interop
-(js/console.log "hello world")
-
-# define functions
-(let will (fun (a b) (+ a b)) (will 7 3))
+(map (fun (n)
+  (if (div n 3)
+    (if (div n 5) "fizzbuzz" "fizz")
+    (if (div n 5) "buzz" n)))
+  (range 100))
 ```
 
-usage
+## factorial example
+```lisp
+(global fac (fun (n)
+  (if (< n 1)
+    1
+    (* n (fac (- n 1))))))
+
+# prints '87178291200'
+(print (fac 14))
+```
+
+## js interop
+```lisp
+(js/console.log "hello world")
+
+(js/document.getElementbyId "primary-btn")
+```
+
+## usage
 ```
 ./run file.lizb
 ```
 
-todo
+## todo
 - async / promise syntax
 - better error handling
 - cdn to use it in browsers
