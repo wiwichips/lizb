@@ -47,7 +47,14 @@ const standardLibrary = {
   '<':  (left, right) => left < right,
   '<=': (left, right) => left <= right,
 
-  'cat': (...args) => args.join(''),
+  'cat': (...args) => {
+    let res = [];
+    if (args.length === 0) return res;
+    if (args[0] instanceof Array) {
+      return [].concat(...args);
+    }
+    return args.join('');
+  },
   'print': console.log,
   'list': (...args) => args,
 
@@ -75,7 +82,7 @@ const standardLibrary = {
       const row = [];
       for (const lst of rest)
         row.push(lst[i]);
-      result.push(fn(...lst));
+      result.push(fn(...lst)); // bug? should this be ...row)
     }
     return result;
   },
@@ -89,8 +96,10 @@ const standardLibrary = {
     let acc = arguments[1];
 
     const inputList = [];
-    for (let i = 2; i < arguments.length; i++)
-      inputList.push(...arguments[i]);
+    for (let i = 2; i < arguments.length; i++) {
+      for (let j = 0; j < arguments[i].length; j++)
+        inputList.push(arguments[i][j]);
+    }
 
     return inputList.reduce(((a,b) => fn(a,b)), acc);
   },
@@ -103,6 +112,18 @@ const standardLibrary = {
     for (let i = 1; i < args.length; i++)
       data = args[i](data);
     return data;
+  },
+
+  /**
+   * Pass list as arguments to a function.
+   * (call fn arg-list)
+   */
+  'call': (...args) => {
+    const fn = args[0];
+    const fargs = [];
+    for (let i = 1; i < args.length; i++)
+      fargs.push(...args[i]);
+    return fn(...fargs);
   },
 
   /**
@@ -125,6 +146,30 @@ const standardLibrary = {
 
     const resSet = new Set(lst);
     return Array.from(resSet);
+  },
+
+  /**
+   * (sorted lst)
+   * (sorted fn lst)
+   */
+  'sorted': function sort_impl() {
+    const lst2 = [];
+
+    let cmp = undefined;
+    let lst = arguments[0];
+
+    if (arguments[0] instanceof Function)
+      lst = arguments[1];
+
+    for (let i = 0; i < lst.length; i++)
+      lst2.push(lst[i]);
+
+    if (cmp)
+      lst2.sort(cmp);
+    else
+      lst2.sort();
+
+    return lst2;
   },
 
   'fs': {
@@ -154,12 +199,22 @@ const standardLibrary = {
   'last':   lst => lst[lst.length -1],
 
   /**
-   * (range num) --> 0, ... num
+   * (range num) --> 0, ... num - 1
+   *
+   * OR
+   *
+   * (range start end) --> start, ... end - 1
    */
   'range': function() {
-    const num = arguments[0];
+    let start = 0;
+    let end   = arguments[0];
+    if (arguments.length === 2) {
+      start = arguments[0];
+      end   = arguments[1];
+    }
+
     const ret = [];
-    for (let i = 0; i < num; i++)
+    for (let i = start; i < end; i++)
       ret.push(i);
     return ret;
   }
