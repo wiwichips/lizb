@@ -89,14 +89,24 @@ const standardLibrary = {
 
   /**
    * (reduce fn accumulator-default list1 list2 list3 ... listN)
+   * or
+   * (reduce fn list) <-- uses first element of list as acc
    * where fn accepts (accumulator, num) parameters in that order...
    */
   'reduce': function filter_impl() {
     const fn = arguments[0];
     let acc = arguments[1];
+    let i = 2;
+
+    // special case of form 2 (reduce fn list) <no acc>
+    if (arguments.length === 2) {
+      acc = arguments[1][0];
+      i = 1;
+      arguments[1] = arguments[1].slice(1);
+    }
 
     const inputList = [];
-    for (let i = 2; i < arguments.length; i++) {
+    for (; i < arguments.length; i++) {
       for (let j = 0; j < arguments[i].length; j++)
         inputList.push(arguments[i][j]);
     }
@@ -200,21 +210,24 @@ const standardLibrary = {
 
   /**
    * (range num) --> 0, ... num - 1
-   *
    * OR
-   *
    * (range start end) --> start, ... end - 1
+   * OR
+   * (range start end step)
    */
   'range': function() {
     let start = 0;
     let end   = arguments[0];
-    if (arguments.length === 2) {
+    let step = 1;
+    if (arguments.length >= 2) {
       start = arguments[0];
       end   = arguments[1];
     }
+    if (arguments.length === 3)
+      step = arguments[2];
 
     const ret = [];
-    for (let i = start; i < end; i++)
+    for (let i = start; i < end; i += step)
       ret.push(i);
     return ret;
   }
