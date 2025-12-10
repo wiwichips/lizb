@@ -314,6 +314,29 @@ const specialHandlers = {
   }),
 
   /**
+   * Anonymous function definition shortcut:
+   * (f.p1.p2.pN fn expr1 expr2 exprN)
+   * example: (f.x * x x)               # square fn, shorter than (fun (x) (* x x))
+   *          (f print "hello world")   # just prints hello world
+   */
+  'f': new Special((ast, ctx) => {
+    const args = ast[0].token.split('.').slice(1);
+    const code = ast.slice(1);
+
+    console.log(code);
+
+    function wrapper() {
+      const scope = {};
+      for (let i = 0; i < Math.min(args.length, arguments.length); i++)
+        scope[args[i]] = arguments[i];
+
+      return evaluate(code, new Context(scope, ctx));
+    }
+    return wrapper;
+  }),
+
+
+  /**
    * Define a variable in the following forms:
    * examples:
    * - (let x val code)

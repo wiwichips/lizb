@@ -10,6 +10,8 @@ function evalItem(obj, ctx = globalContext) {
     case 'root':
       return (...x) => x;
     case 'special':
+      if (obj.token.slice(0,2) === 'f.')
+        return specials['f'];
       return specials[obj.token];
     case 'number':
       return Number(obj.token);

@@ -38,7 +38,7 @@ function parse(tokens) {
         else if (!isNaN(token))
           obj = new Obj(Number(token), 'number');
         // special
-        else if (token === 'fun' || token === 'let' || token === 'if' || token === 'when' || token === 'global')
+        else if (['fun', 'let', 'if', 'when', 'global', 'f'].includes(token) || token.slice(0,2) == 'f.')
           obj = new Obj(token, 'special');
         // name
         else
