@@ -323,8 +323,6 @@ const specialHandlers = {
     const args = ast[0].token.split('.').slice(1);
     const code = ast.slice(1);
 
-    console.log(code);
-
     function wrapper() {
       const scope = {};
       for (let i = 0; i < Math.min(args.length, arguments.length); i++)
