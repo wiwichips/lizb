@@ -208,6 +208,15 @@ const standardLibrary = {
   'rest':   lst => lst.slice(1),
   'last':   lst => lst[lst.length -1],
 
+  'in': (key, lst) => key in lst,
+
+  'enumerate': lst => {
+    const ret = [];
+    for (let i = 0; i < lst.length; i++)
+      ret.push([i, lst[i]]);
+    return ret;
+  },
+
   /**
    * (range num) --> 0, ... num - 1
    * OR
