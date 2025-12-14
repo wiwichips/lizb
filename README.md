@@ -43,3 +43,4 @@ ideas
 - `((fun ((a b)) (+ a b)) (list 1 2))` <-- list deconstruction in function def! cool
 - `(in needle haystack)` <-- true or false, haystack could be hashmap
 - `(enumerate lst)` <-- returns list of lists in form [ (idx1 val1) (idx2 val2) ... (idxn valn) ]
+- `(get lst key1 key2 key3)` <-- same as `lst[key1][key2][key3]` in js
