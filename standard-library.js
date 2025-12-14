@@ -239,7 +239,63 @@ const standardLibrary = {
     for (let i = start; i < end; i += step)
       ret.push(i);
     return ret;
-  }
+  },
+
+  /**
+   * Product of N lists like python itertools.product
+   *
+   * (product list1 list2 List3 ... listN)
+   *
+   * OR
+   *
+   * (product 2 lst) # which is same as (product lst lst)
+   *
+   * Examples:
+   * (product (list 1 2 3) (list "a" "b")) # [[1,'a'], [2, 'a'], [3,'a'], [1, 'b'] ...
+   */
+  'product': function() {
+    const lists = [];
+    let out = [[]];
+
+    if (arguments.length === 2 && !(arguments[0] instanceof Array)) {
+      lists.push(arguments[1]);
+      lists.push(arguments[1]);
+    } else {
+      for (let i = 0; i < arguments.length; i++)
+        lists.push(arguments[i]);
+    }
+
+    // generate things
+    for (const lst of lists) {
+      const next = [];
+      for (const combo of out) {
+        for (const item of lst) {
+          next.push([...combo, item]);
+        }
+      }
+      out = next;
+    }
+    return out;
+  },
+
+  /**
+   * Just a thin wrapper around js Object...
+   *
+   * Examples:
+   * (dict)                       # empty
+   * (dict k1 v1 k2 v2 ... kN vN) # standard
+   */
+  'dict': function() {
+    const obj = {};
+
+    // error case where off number of inputs
+
+    for (let i = 0; i < arguments.length; i+=2) {
+      obj[arguments[i]] = [arguments[i + 1]];
+    }
+
+    return obj;
+  },
 };
 
 // functions for processing code for lambdas etc
