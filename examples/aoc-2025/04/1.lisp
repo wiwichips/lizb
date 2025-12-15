@@ -1,5 +1,6 @@
-#Author: Pasan Undugodage 
 #!/usr/bin/env lizb
+#Author: Pasan Undugodage 
+
 (global input (fs/read "./input.txt"))
 
 (global lines ((f.x split x "\n") input))
