@@ -1,7 +1,17 @@
 import { Context } from './context.js';
 import { evaluate, globalContext } from './eval.js';
+import * as domLibrary from './lib/dom.js';
 
-import { readFileSync } from "node:fs"; // won't work in browser... TODO
+
+//import { readFileSync } from "node:fs"; // won't work in browser... TODO
+let readFileSync = null;
+
+if (typeof process !== "undefined" && process.versions?.node) {
+  const { createRequire } = await import("node:module");
+  const require = createRequire(import.meta.url);
+  ({ readFileSync } = require("node:fs"));
+}
+
 
 // host env modules
 const js = globalThis;
@@ -202,6 +212,11 @@ const standardLibrary = {
   },
   'len': lst => lst.length,
   'get': (lst, idx) => lst[idx],
+  'set': (lst, idx, newval) => {
+    const old = lst[idx];
+    lst[idx] = newval;
+    return old;
+  },
 
   'first':  lst => lst[0],
   'second': lst => lst[1],
@@ -297,6 +312,8 @@ const standardLibrary = {
     return obj;
   },
 };
+
+standardLibrary.dom = domLibrary;
 
 // functions for processing code for lambdas etc
 class Special {

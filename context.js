@@ -17,8 +17,14 @@ class Context {
       return value;
 
     // module path
-    for (const part of parts.slice(1))
-      value = value[part]; // todo: error handling
+    for (const part of parts.slice(1)) {
+      const receiver = value;
+      value = receiver[part];
+
+      if (typeof value === "function") {
+        value = value.bind(receiver);
+      }
+    }
 
     return value;
   }
