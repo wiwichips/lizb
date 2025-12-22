@@ -341,13 +341,15 @@ const specialHandlers = {
    * - (fun (code))                - 3.  No args
    */
   'fun': new Special((ast, ctx) => {
+    let otherCode = [];
     const code = ast[ast.length - 1]; // code always last
     const arglist = ast.slice(0, ast.length -1);
 
     // process function parameter names
     let args = [];
-    if (arglist.length > 0) {
-      const argObj = arglist.pop();
+    if (arglist.length > 1) {
+      const argObj = arglist[1];
+      otherCode = arglist.slice(2, ast.length - 1);
       if (argObj instanceof Array) {
         for (const miniArg of argObj) {
           // 1a/ Parameter Deconstructions
@@ -387,6 +389,10 @@ const specialHandlers = {
       else
         scope[args] = Array.from(arguments);
       const innerCtx = new Context(scope, ctx);
+
+      // execute all extra codes which aren't part of return
+      for (const codeLine of otherCode)
+        evaluate(codeLine, innerCtx);
 
       // execute function with new scope
       return evaluate(code, innerCtx);

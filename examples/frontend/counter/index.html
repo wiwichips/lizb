@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8"/>
+<title id='title'>LizB minimal</title>
+
+<body>
+    <h1 id='header'>Count:0</h1>
+    <button id='btn'>Press</button>
+</body>
+
+<!--<script type="module" src="http://willpringle.ca/lizb/web.js"></script>-->
+<script type="module" src="../../../web.js"></script>
+
+<script type="text/lizb">
+
+# define count as 0
+(global count 0)
+
+# increment count and update it each time
+(dom/on (dom/query "#btn") "click" (fun e
+  (global count (+ count 1))
+  (set (dom/query "#header") "textContent" (cat "Count:" count))))
+
+</script>
+
+<script type="text/lizb" src="./example.lisp"></script>
+
