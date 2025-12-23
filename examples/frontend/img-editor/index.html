@@ -14,54 +14,10 @@
 
   <input id="file" type="file" accept="image/*" />
   <canvas id="canvas" width="800" height="600"></canvas>
-<!--
-  <script>
-    const input = document.getElementById("file");
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-
-    input.addEventListener("change", () => {
-      const file = input.files?.[0];
-      if (!file) return;
-
-      const img = new Image();
-
-      // Use a blob URL so we don't have to read base64.
-      const url = URL.createObjectURL(file);
-
-      img.onload = () => {
-        // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Scale to fit canvas while preserving aspect ratio
-        const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-        const w = Math.floor(img.width * scale);
-        const h = Math.floor(img.height * scale);
-        const x = Math.floor((canvas.width - w) / 2);
-        const y = Math.floor((canvas.height - h) / 2);
-
-        ctx.drawImage(img, x, y, w, h);
-
-        // Clean up blob URL
-        URL.revokeObjectURL(url);
-      };
-
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        alert("Could not load that image.");
-      };
-
-      img.src = url;
-    });
-  </script>
--->
 
   <!--<script type="module" src="http://willpringle.ca/lizb/web.js"></script>-->
   <script type="module" src="../../../web.js"></script>
   <script type="text/lizb" src="./code.lisp"></script>
 </body>
 </html>
-
-
-
 
