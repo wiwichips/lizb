@@ -98,6 +98,17 @@ const standardLibrary = {
   },
 
   /**
+   * (loop fn lst) -- like map but only for mutations
+   */
+  'loop': function loop_impl() {
+    const fn = arguments[0];
+    const data = arguments[1];
+
+    for (let i = 0; i < data.length; i++)
+      fn(data[i]);
+  },
+
+  /**
    * (reduce fn accumulator-default list1 list2 list3 ... listN)
    * or
    * (reduce fn list) <-- uses first element of list as acc

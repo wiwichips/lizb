@@ -19,7 +19,7 @@ syntax region lizbString start=/"/ skip=/\\"/ end=/"/
 syntax match lizbNumber "\v[-+]?\d+"
 
 " Core keywords / special forms
-syntax keyword lizbKeyword let fun map filer reduce list if when range global and or not = 
+syntax keyword lizbKeyword let fun map filter reduce loop list if when range global and or not =
 
 " js interop: js/<something>
 syntax match lizbJsInterop "\vjs\/[A-Za-z0-9_.]*"
