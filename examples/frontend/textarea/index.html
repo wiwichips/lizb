@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Textarea</title>
+<body><i>Simple pastebin with URL based storage. Based on <a href="https://github.com/antonmedv/textarea">textarea.my</a></i></body>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: light dark;
+    background-color: #f6f6ef;
+    color: #161616;
+
+    @media (prefers-color-scheme: dark) {
+      background-color: #000;
+      color: #fff;
+    }
+  }
+
+  article {
+    outline: none;
+    padding: 18px max(18px, calc(50vw - 400px));
+    width: 100%;
+    min-height: 100vh;
+    font: 18px / 1.5 system-ui;
+    tab-size: 4;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    white-space: pre-wrap;
+    text-wrap-style: pretty;
+    overflow-wrap: break-word;
+  }
+</style>
+
+<article contenteditable="plaintext-only" spellcheck></article>
+
+<script type="module" src="../../../web.js"></script>
+<script type="text/lizb">
+# code
+
+(global article (dom/query "article"))
+(global href js/window.location.href)
+(global url ((js/eval "x=>new URL(x)") href))
+(global start ((js/eval "u=>u.searchParams.get('text')") url))
+
+(if start (set article "textContent" (js/atob start)))
+
+(global update-url (fun (event)
+  (let
+    (text (article "textContent")
+     translated (js/btoa text))
+    ((js/eval "(u,k,v)=>u.searchParams.set(k,v)") url "text" translated)
+    (js/history.replaceState 0 "" url))))
+
+(dom/on article "input" update-url)
+
+</script>
+
