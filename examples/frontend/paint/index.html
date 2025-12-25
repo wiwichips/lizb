@@ -1,0 +1,56 @@
+<button id="download-btn">Save Image</button>
+<br>
+<canvas id="c" style="border:1px solid #ccc; touch-action:none;"></canvas>
+
+<!--<script type="module" src="http://willpringle.ca/lizb/web.js"></script>-->
+<script type="module" src="../../../web.js"></script>
+
+<script type="text/lizb">
+
+(global canvas (dom/id "c"))
+(global ctx (canvas.getContext "2d"))
+
+# set initial canvas size to the size of the screen
+(set canvas "width"  js/window.innerWidth)
+(set canvas "height" js/window.innerHeight)
+
+# drawing config
+(set ctx "lineWidth" 6)
+(set ctx lineCap "round")
+(set ctx strokeStyle "#111")
+
+(global is-drawing 0)
+
+# returns [x, y]
+(global get-pos (fun (e)
+  (let r (canvas.getBoundingClientRect)
+    (list
+      (- (e "clientX") (r "left"))
+      (- (e "clientY") (r "top"))))))
+
+(global start-draw (fun (e)
+  (global is-drawing 1)
+  (ctx.beginPath)
+  (call ctx.moveTo (get-pos e))))
+
+(global draw-move (fun (e)
+  (if is-drawing (and
+    (call ctx.lineTo (get-pos e))
+    (ctx.stroke)))))
+
+(global end-draw (f global is-drawing 0))
+
+(global hold-draw (fun (e)
+  (canvas.setPointerCapture (e "pointerId"))
+  (start-draw e)))
+
+(dom/on canvas "pointerdown"   hold-draw)
+(dom/on canvas "pointermove"   draw-move)
+(dom/on canvas "pointerup"     end-draw)
+(dom/on canvas "pointercancel" end-draw)
+
+(dom/on (dom/id "download-btn") "click" (fun (e)
+  (js/window.open (canvas.toDataURL "image/png"))))
+
+</script>
+
