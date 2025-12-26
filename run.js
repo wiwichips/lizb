@@ -6,24 +6,37 @@ import fs from 'node:fs';
 import readline from 'node:readline';
 
 let code = `
-(print "Welcome to" (last (split \"${process.argv[1]}\" "/")))
+(print
+  "Welcome to" (last (split \"${process.argv[1]}\" "/")))
 `;
 
-async function main() {
-  if (process.argv.length > 2) {
-    const uargs = process.argv.slice(2);
-    if (uargs[0] === '-e' || uargs[0] === '--eval')
-      code = uargs[1];
+let verbosity = 0;
 
-    else if (uargs[0] === '-r' || uargs[0] === '--repl') {
-      readEvalPrintLoop();
-    } else
-      code = fs.readFileSync(uargs[0], 'utf8');
+async function main() {
+  let mode = undefined;
+
+  for (const opt of process.argv.slice(2)) {
+    if (mode === 'eval') {
+      code = opt;
+      mode = undefined;
+    }
+
+    else if (['-e', '--eval'].includes(opt))
+      mode = 'eval';
+    else if (['-r', '--repl'].includes(opt))
+      await readEvalPrintLoop();
+    else if (['-v', '--verbose'].includes(opt))
+      verbosity += 1;
+    else if (['-vv'].includes(opt))
+      verbosity += 2;
+    else {
+      code = fs.readFileSync(opt, 'utf8');
+      await runCode(code);
+    }
   }
-  runCode(code);
 }
 
-async function readEvalPrintLoop(options) {
+async function readEvalPrintLoop() {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -39,7 +52,9 @@ async function readEvalPrintLoop(options) {
   rl.prompt(true);
 
   for await (const line of rl) {
-    // optional: ignore empty lines
+    if (line === 'q')
+      process.exit(0);
+
     if (line.trim() === "") {
       rl.prompt(true);
       continue;
@@ -52,10 +67,10 @@ async function readEvalPrintLoop(options) {
 
 function runCode(codeString) {
   const tokens = lexer(codeString);
-  //console.log(tokens);
+  verbosity >= 2 && console.log(tokens);
 
   const ast = parser(tokens);
-  //console.log(ast);
+  verbosity >= 1 && console.log(ast);
 
   const ret = evalAst(ast);
   console.log(ret);
