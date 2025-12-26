@@ -1,3 +1,8 @@
 {
-  "type": "module"
+  "name": "lizb",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "lizb": "./run.js"
+  }
 }
