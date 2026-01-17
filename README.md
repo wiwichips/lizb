@@ -1,6 +1,25 @@
 # lizb
 minimalistic sexp based programming language with js interop
 
+# Install
+Serverside usage:
+```bash
+$ npm i -g lizb
+$ lizb your_epic_code.lizb
+```
+
+Browser usage:
+```html
+<script type="module" src="http://willpringle.ca/lizb/web.js"></script>
+<script type="text/lizb">
+
+# your code here...
+(print "Hello, World!")
+
+</script>
+```
+
+
 ## fizzbuzz example
 ```lisp
 (map (fun (n)
