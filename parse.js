@@ -20,11 +20,13 @@ function parse(tokens) {
     const token = tokens[i];
 
     switch (token) {
+      case ')_DOT':
       case ')':
         const popped = stack.pop();
         stack.peek().push(popped);
         break;
 
+      case '(_DOT':
       case '(':
         stack.push([]);
         break;
