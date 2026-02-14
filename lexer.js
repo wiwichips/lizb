@@ -5,6 +5,7 @@ export function lexer(code) {
   let lineno = 1;
   let fundent = 0; // last function expected indent
   let lindent = 0; // the current line's indent level
+  let lastdent = 0; // indent of last line
   let curtok = '';
 
   let debugNumOpenParen = 0;
@@ -30,6 +31,7 @@ export function lexer(code) {
       mode = 0;
     }
     else if (c === '"') {
+      handleIndentedCode();
       mode = 2;
       curtok += '"';
     }
@@ -40,8 +42,17 @@ export function lexer(code) {
     else if (c === '\n') {
       endLine();
     }
-    else if (c === ' ' && (i && (code[i - 1] === ' ')) && lineFirstCode) {
-      lindent += 1;
+    else if (c === ' ' && lineFirstCode) {
+      let numSpaces = 0;
+      while (code[i] === ' ') {
+        i++;
+        numSpaces++;
+      }
+      if (fundent && numSpaces % 2)
+        throw new Error(`Invalid indents ${numSpaces}\n  ${lineno}\t` + code.split('\n')[lineno - 1]);
+
+      lindent += numSpaces / 2;
+      i -= 1; // reprocess the first non-space char on this line
     }
     else if (c === '\t') {
       lindent += 1;
@@ -50,11 +61,13 @@ export function lexer(code) {
       completeToken();
     }
     else if (c === '(') {
+      handleIndentedCode();
       debugNumOpenParen++;
       completeToken();
       tokens.push('(');
     }
     else if (c === ')') {
+      handleIndentedCode();
       // for debug only...
       debugNumOpenParen--;
       if (debugNumOpenParen < 0)
@@ -68,19 +81,20 @@ export function lexer(code) {
       completeToken();
     }
     else {
+      handleIndentedCode();
       curtok += c;
     }
 
   }
+  // Treat EOF like an end-of-line to close any open dot lists.
   lineFirstCode = true;
+  lindent = 0;
   handleIndentedCode();
 
   if (debugNumOpenParen !== 0) {
     const closeOrOpen = debugNumOpenParen > 0 ? "open" : "close";
     throw new Error(`${debugNumOpenParen} ${closeOrOpen} parenthesis detected\n  ${lineno}\t` + code.split('\n')[lineno - 1]);
   }
-
-  //console.log(reconstructCode(tokens));
 
   return tokens;
 
@@ -101,6 +115,9 @@ export function lexer(code) {
 
     lineFirstCode = false;
 
+    if (!fundent)
+      return;
+
     if (lindent === fundent) {
       // nothing to do
     } else if (lindent < fundent) {
@@ -111,8 +128,9 @@ export function lexer(code) {
     } else {
       // impossible
       if (fundent !== 0)
-        throw new Error(`Impossible indentation\n  ${lineno}\t` + code.split('\n')[lineno - 1]);
+        throw new Error(`Impossible indentation ${fundent} ${lindent}\n  ${lineno}\t` + code.split('\n')[lineno - 1]);
     }
+    lastdent = lindent; // for next time...
   }
 
   function endLine() {
@@ -120,6 +138,7 @@ export function lexer(code) {
     completeToken();
     lindent = 0;
     lineno += 1;
+    lineFirstCode = true;
   }
 }
 
@@ -158,6 +177,7 @@ export function reconstructCode(tokens) {
         else if (tok === ')')
           nesting -= 1;
       }
+      rcode += '\n';
     }
     else {
       rcode += '  '.repeat(fdent);
@@ -168,5 +188,3 @@ export function reconstructCode(tokens) {
 
   return rcode;
 }
-
-
