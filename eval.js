@@ -56,4 +56,8 @@ function evaluate(ast, ctx = globalContext) {
 export const evalAst = evaluate;
 export { evaluate };
 export { globalContext };
-
+export function evalProgram(ast, ctx = globalContext) {
+  const result = evaluate(ast, ctx);
+  if (ast?.[0]?.type === 'root') return result;
+  return [result];
+}
